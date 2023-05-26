@@ -13,25 +13,23 @@ COLORS = [(245, 245, 225), (85, 85, 85)]
 
 class Grid():
     name = None
-    rules = [[], []] # [[# of alive neighbors that revives you], [# of alive neighbors that keeps you alive]]
     grid = []
+    b_rules = s_rules = ""
 
     def __init__(self):
         self.grid = [[0 for _ in range(WIN_W // CELL_SZ)] for _ in range(WIN_H // CELL_SZ)]
         self.grid_w, self.grid_h = len(self.grid[0]), len(self.grid)
 
-        temp_rules = [[], []]
         print("Enter the rules for the automaton.")
 
-        b_rules = s_rules = "!"
-        while re.findall("\D", b_rules):
-            b_rules = input("Birth rules (string of numbers of alive neighbors that revive a cell), '3' for classic: ")
-        while re.findall("\D", s_rules):
-            s_rules = input("Survival rules (string of numbers of alive neighbors such that that the cell survives), '23' for classic: ")
+        self.b_rules = self.s_rules = "!"
+        while re.findall("\D", self.b_rules):
+            self.b_rules = input("Birth rules (string of numbers of alive neighbors that revive a cell), '3' for classic: ")
+        while re.findall("\D", self.s_rules):
+            self.s_rules = input("Survival rules (string of numbers of alive neighbors such that that the cell survives), '23' for classic: ")
 
-        for i in (0, 1):
-            for c in temp_rules[i]:
-                self.rules[i].append(int(c))
+        self.b_rules = [int(c) for c in self.b_rules]
+        self.s_rules = [int(c) for c in self.s_rules]
 
         if input("Do you have a file with an initial pattern (in 'plaintext' format) ? [y/n]: ").lower()[0] == "y": # plaintext format: https://conwaylife.com/wiki/Plaintext
             root = tk.Tk()
@@ -50,7 +48,7 @@ class Grid():
 
                 for i, line in enumerate(lines):
                     for j in range(len(line)):
-                        self.grid[i + self.grid_h // 2 - pattern_h // 2][j + self.grid_w // 2 - pattern_w // 2] = 1 if line[j] == "O" else 0
+                        self.grid[i + self.grid_h // 2 - pattern_h // 2 - 1][j + self.grid_w // 2 - pattern_w // 2 - 1] = 1 if line[j] == "O" else 0
         else:
             self.name = "Random"
             for i in range(self.grid_h):
@@ -90,15 +88,23 @@ class Grid():
         for i in range(self.grid_h):
             for j in range(self.grid_w):
                 cnt = self.count_alive_neighbors(i, j)
-                if self.grid[i][j] == 0 and cnt in self.rules[0]:
+                if self.grid[i][j] == 0 and cnt in self.b_rules:
                     new_grid[i][j] = 1
-                if self.grid[i][j] == 1 and cnt not in self.rules[1]:
+                if self.grid[i][j] == 1 and cnt not in self.s_rules:
                     new_grid[i][j] = 0
 
         self.grid = [[0 for _ in range(WIN_W // CELL_SZ)] for _ in range(WIN_H // CELL_SZ)]
         for i in range(self.grid_h):
             for j in range(self.grid_w):
                 self.grid[i][j] = new_grid[i][j]
+
+    def get_text_description(self):
+        file_contents = "!Name: " + input("Enter the name of your pattern: ") + "\n!"
+        for i in range(self.grid_h):
+            file_contents += "\n"
+            for j in range(self.grid_w):
+                file_contents += "O" if self.grid[i][j] else "."
+        return file_contents
 
 grid = Grid()
 
@@ -113,6 +119,7 @@ print('''
 John Conway's "Game of Life"
 - [Left arrow] / [Right arrow] to slow down / speed up
 - [Space] to pause
+- [CTRL] + [S] to save the pattern to a file
 ''')
 
 generation = 1
@@ -131,6 +138,16 @@ while generation:
                 FPS -= 1
             if event.key == pygame.K_SPACE:
                 paused ^= 1
+            if event.key == pygame.K_s and paused:
+                mods = pygame.key.get_mods()
+                if mods & pygame.KMOD_CTRL:
+                    root = tk.Tk()
+                    filename = filedialog.asksaveasfilename(defaultextension = "*.txt")
+                    if filename:
+                        with open(filename, "w") as file:
+                            file.write(grid.get_text_description())
+                    print("File saved.")
+                    root.withdraw()
         
     if generation:
         grid.draw(window, generation - 2, FPS, paused)

@@ -2,6 +2,7 @@ import pygame
 import random
 import time
 import os
+import re
 import tkinter as tk
 from tkinter import filedialog
 
@@ -19,9 +20,14 @@ class Grid():
         self.grid = [[0 for _ in range(WIN_W // CELL_SZ)] for _ in range(WIN_H // CELL_SZ)]
         self.grid_w, self.grid_h = len(self.grid[0]), len(self.grid)
 
+        temp_rules = [[], []]
         print("Enter the rules for the automaton.")
-        temp_rules = [input("Birth rules (string of numbers of alive neighbors that revive a cell), '3' for classic: "), 
-        input("Survival rules (string of numbers of alive neighbors such that that the cell survives), '23' for classic: ")]
+
+        b_rules = s_rules = "!"
+        while re.findall("\D", b_rules):
+            b_rules = input("Birth rules (string of numbers of alive neighbors that revive a cell), '3' for classic: ")
+        while re.findall("\D", s_rules):
+            s_rules = input("Survival rules (string of numbers of alive neighbors such that that the cell survives), '23' for classic: ")
 
         for i in (0, 1):
             for c in temp_rules[i]:
@@ -133,4 +139,5 @@ while generation:
         pygame.display.flip()
         clock.tick(FPS)
 
+os.system("cls")
 pygame.quit()
